@@ -69,11 +69,10 @@ ipcMain.handle('get-serial-ports', async () => {
       }
     }
 
-    // Windows平台：确保返回的串口路径格式正确（COMx）
+    // Windows平台：确保返回的串口路径格式正确（支持COMx和com0com的CNCxx格式）
     if (process.platform === 'win32') {
-      // Windows串口路径已由SerialPort.list()正确返回为COMx格式
-      // 过滤掉无效的串口路径
-      return ports.filter(p => p.path && p.path.match(/^COM\d+$/i));
+      // 同时支持标准COM端口和com0com虚拟串口（CNCA0, CNCB0等）
+      return ports.filter(p => p.path && p.path.match(/^(COM\d+|CNC[A-Z]\d+)$/i));
     }
 
     return ports;

@@ -1,11 +1,20 @@
 # Dependencies
 node_modules/
+*/node_modules/
 package-lock.json
+*/package-lock.json
+yarn.lock
+*/yarn.lock
 
 # Build outputs
 dist/
+*/dist/
 build/
+*/build/
 out/
+*/out/
+release/
+*/release/
 
 # Electron
 electron-builder/
@@ -14,6 +23,13 @@ electron-builder/
 *.exe
 *.msi
 *.zip
+*.deb
+*.rpm
+*.AppImage
+electron/
+
+# Serial port binaries
+serial-port-reader*/
 
 # IDE
 .vscode/
@@ -35,3 +51,7 @@ yarn-error.log*
 .env
 .env.local
 .env.*.local
+
+# Temporary files
+clear
+npm
