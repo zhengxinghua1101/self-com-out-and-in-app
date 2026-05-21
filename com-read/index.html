@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>串口模拟工具</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 100%;
+      height: calc(100vh - 40px);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header h1 {
+      font-size: 20px;
+      color: #333;
+    }
+    .status {
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .status.stopped {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .status.running {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .port-info {
+      padding: 12px 20px;
+      background: #e3f2fd;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #1565c0;
+      display: none;
+    }
+    .port-info.show {
+      display: block;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .baud-select {
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      background: white;
+    }
+    .btn {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #2196f3;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #1976d2;
+    }
+    .btn-danger {
+      background: #f44336;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #d32f2f;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .data-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .panel-header {
+      padding: 15px 20px;
+      border-bottom: 1px solid #eee;
+      font-size: 16px;
+      color: #333;
+    }
+    .data-display {
+      flex: 1;
+      padding: 15px 20px;
+      overflow-y: auto;
+      font-family: 'Monaco', 'Menlo', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #333;
+      background: #fafafa;
+    }
+    .data-line {
+      padding: 4px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .data-line:nth-child(odd) {
+      background: #f8f9fa;
+    }
+    .message {
+      padding: 12px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    .message.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+      display: block;
+    }
+    .message.error {
+      background: #ffebee;
+      color: #c62828;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📡 串口模拟读取工具</h1>
+      <span class="status stopped" id="status">未启动</span>
+    </div>
+
+    <div class="controls">
+      <select id="baudRate" class="baud-select">
+        <option value="115200">115200</option>
+        <option value="9600">9600</option>
+        <option value="19200">19200</option>
+        <option value="38400">38400</option>
+        <option value="57600">57600</option>
+      </select>
+      <button class="btn btn-primary" id="startBtn">启动虚拟串口</button>
+      <button class="btn btn-danger" id="stopBtn" disabled>停止</button>
+    </div>
+
+    <div id="portInfo" class="port-info"></div>
+    <div id="message" class="message"></div>
+
+    <div class="data-panel">
+      <div class="panel-header">接收的数据</div>
+      <div class="data-display" id="dataDisplay"></div>
+    </div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const portInfoEl = document.getElementById('portInfo');
+    const messageEl = document.getElementById('message');
+    const dataDisplayEl = document.getElementById('dataDisplay');
+
+    function showMessage(text, type = 'success') {
+      messageEl.textContent = text;
+      messageEl.className = `message ${type}`;
+      setTimeout(() => messageEl.style.display = 'none', 3000);
+    }
+
+    function updateStatus(running) {
+      statusEl.className = `status ${running ? 'running' : 'stopped'}`;
+      statusEl.textContent = running ? '运行中' : '未启动';
+      startBtn.disabled = running;
+      stopBtn.disabled = !running;
+    }
+
+    startBtn.addEventListener('click', async () => {
+      const baudRate = document.getElementById('baudRate').value;
+      const result = await window.electronAPI.startVirtualSerial(baudRate);
+      if (result.success) {
+        portInfoEl.innerHTML = `💡 波特率 ${baudRate}，其他软件连接此端口发送数据：<b>${result.writePort}</b>`;
+        portInfoEl.classList.add('show');
+        showMessage(result.message);
+        updateStatus(true);
+      } else {
+        showMessage(result.message, 'error');
+      }
+    });
+
+    stopBtn.addEventListener('click', async () => {
+      await window.electronAPI.stopVirtualSerial();
+      portInfoEl.classList.remove('show');
+      showMessage('已停止虚拟串口', 'success');
+      updateStatus(false);
+    });
+
+    window.electronAPI.onDataReceived((data) => {
+      const line = document.createElement('div');
+      line.className = 'data-line';
+      line.textContent = data;
+      dataDisplayEl.appendChild(line);
+      dataDisplayEl.scrollTop = dataDisplayEl.scrollHeight;
+    });
+
+    window.electronAPI.onSerialError((msg) => {
+      showMessage('错误: ' + msg, 'error');
+    });
+  </script>
+</body>
+</html>

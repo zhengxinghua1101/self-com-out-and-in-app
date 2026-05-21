@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>打鼾干预测试</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', sans-serif;
+      background: #f4f6f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 470px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .card-title {
+      font-size: 12px;
+      color: #86909c;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    select {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid #e5e6eb;
+      border-radius: 6px;
+      font-size: 13px;
+      outline: none;
+      background: #f7f8fa;
+    }
+
+    select:focus {
+      border-color: #1677ff;
+      background: white;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:disabled {
+      background: #e5e6eb !important;
+      color: #86909c !important;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #1677ff;
+      color: white;
+    }
+    .btn-primary:hover { background: #4080ff; }
+
+    .btn-success {
+      background: #00b42a;
+      color: white;
+    }
+    .btn-success:hover { background: #23c348; }
+
+    .btn-danger {
+      background: #f53f3f;
+      color: white;
+    }
+    .btn-danger:hover { background: #ff6b6b; }
+
+    /* 中间控制按钮组 */
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+    .controls .btn {
+      flex: 1;
+      padding: 10px;
+      font-size: 14px;
+    }
+
+    /* 计时器 */
+    .timer-section {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 0;
+    }
+    .timer-value {
+      font-size: 56px;
+      font-weight: 300;
+      color: #1d2129;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+    }
+    .timer-value.running {
+      color: #00b42a;
+      font-weight: 400;
+    }
+
+    /* 发送内容显示 */
+    .data-section {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .data-display {
+      flex: 1;
+      background: #f7f8fa;
+      border: 1px solid #e5e6eb;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+      font-size: 12px;
+      color: #1d2129;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .data-display::-webkit-scrollbar {
+      width: 6px;
+    }
+    .data-display::-webkit-scrollbar-thumb {
+      background: #c9cdd4;
+      border-radius: 3px;
+    }
+
+    /* App loading overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .loading-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e5e6eb;
+      border-top-color: #1677ff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- 第一层：串口设置 -->
+    <div class="card">
+      <div class="card-title">串口设置</div>
+      <div class="row">
+        <button class="btn btn-primary" id="initBtn">重置</button>
+        <select id="portSelect">
+          <option value="">请选择...</option>
+        </select>
+        <select id="baudSelect" style="flex: 0 0 100px;">
+          <option value="9600">9600</option>
+          <option value="19200">19200</option>
+          <option value="38400">38400</option>
+          <option value="57600">57600</option>
+          <option value="115200" selected>115200</option>
+          <option value="230400">230400</option>
+          <option value="460800">460800</option>
+        </select>
+        <button class="btn btn-primary" id="connectBtn">连接</button>
+      </div>
+    </div>
+
+    <!-- 第二层：控制按钮 -->
+    <div class="card">
+      <div class="controls">
+        <button class="btn btn-success" id="startBtn" disabled>开始</button>
+        <button class="btn btn-danger" id="stopBtn" disabled>结束</button>
+        <button class="btn btn-primary" id="refreshBtn" disabled>刷新</button>
+      </div>
+    </div>
+
+    <!-- 第三层：计时 -->
+    <div class="card timer-section">
+      <div class="timer-value" id="timer">00:00:00</div>
+    </div>
+
+    <!-- 第四层：发送内容 -->
+    <div class="card data-section">
+      <div class="card-title">当前发送数据</div>
+      <div class="data-display" id="dataDisplay">等待发送...</div>
+    </div>
+
+  </div>
+
+  <!-- Loading 遮罩 -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading-spinner"></div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <!-- 渐变定义 -->
+    <linearGradient id="wgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6B8EFF" />
+      <stop offset="50%" stop-color="#9B59B6" />
+      <stop offset="100%" stop-color="#E84393" />
+    </linearGradient>
+  </defs>
+
+  <!-- 背景 -->
+  <rect width="500" height="500" fill="#f8f9ff"/>
+
+  <!-- 字母 W - 使用圆润风格的字体 -->
+  <text x="250" y="350" font-family="'Comic Sans MS', 'Chalkboard SE', 'Nunito', 'Varela Round', Arial, sans-serif"
+        font-size="280" font-weight="bold" text-anchor="middle"
+        fill="url(#wgGradient)">W</text>
+</svg>

@@ -1,0 +1,53 @@
+{
+  "name": "serial-port-reader",
+  "version": "1.0.0",
+  "description": "串口数据读取工具",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.13.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.3",
+    "serialport": "^12.0.0"
+  },
+  "build": {
+    "appId": "com.serial.reader",
+    "productName": "串口读取工具",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        }
+      ],
+      "requestedExecutionLevel": "asInvoker",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "publish": {
+      "provider": "generic",
+      "url": "http://your-server.com/releases"
+    }
+  }
+}
