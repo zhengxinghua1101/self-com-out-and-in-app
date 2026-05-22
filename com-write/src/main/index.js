@@ -19,6 +19,7 @@ let sendInterval = null;
 let timerInterval = null;
 let dataPackets = [];
 let startTime = null;
+let isSending = false; // 标记是否正在发送数据
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -121,6 +122,11 @@ ipcMain.handle('close-serial', async () => {
     clearInterval(timerInterval);
     timerInterval = null;
   }
+  if (sendInterval) {
+    clearInterval(sendInterval);
+    sendInterval = null;
+  }
+  console.log('[关闭串口] 所有定时器已清理');
   return { success: true };
 });
 
@@ -188,71 +194,88 @@ async function writeAndDrainAll(packet) {
   await Promise.all(promises);
 }
 
-async function sendLoop() {
-  const openPorts = serialPorts.filter(p => p && p.isOpen);
-  if (!isRunning || openPorts.length === 0) return;
+// 后台异步发送函数，不阻塞定时器
+async function sendDataAsync() {
+  if (!isRunning || isSending) return;
+  isSending = true;
 
-  const cycleStartTime = Date.now(); // 记录当前大包开始倾倒的时间点
+  const openPorts = serialPorts.filter(p => p && p.isOpen);
+  if (openPorts.length === 0) {
+    isSending = false;
+    return;
+  }
 
   try {
-    // 🌟【优化点二】：摒弃原本导致数据挤爆乱码的 forEach 盲发
-    // 改用 async-for 串行异步循环，一包发完并排空，才发下一包
+    // 发送所有数据包
     for (let i = 0; i < dataPackets.length; i++) {
-      if (!isRunning) break; // 允许随时在中途点击停止
-
+      if (!isRunning) break;
       await writeAndDrainAll(dataPackets[i]);
-
-      // 给单片机预留 15 毫秒的基础时间间隙去处理中断并写入 Flash，防止连续轰炸导致片上死机
+      // 单片机处理间隔
       await new Promise(resolve => setTimeout(resolve, 15));
     }
 
-    // 发送数据内容到前端显示（显示第一组作为示例）
-    if (isRunning) {
+    // 通知前端
+    if (isRunning && mainWindow) {
       const firstPacketHex = dataPackets[0]?.toString('hex').toUpperCase() || '';
       mainWindow.webContents.send('data-update', firstPacketHex, 0, dataPackets.length);
     }
-
   } catch (err) {
-    console.error('串口数据倾倒失败:', err);
-    mainWindow.webContents.send('data-update', 'ERROR: 写入失败', 0, 0);
+    console.error('串口发送失败:', err);
+    if (mainWindow) {
+      mainWindow.webContents.send('data-update', 'ERROR: 写入失败', 0, 0);
+    }
   }
 
-  // 🌟【优化点三】：流控时间平滑补偿
-  // 串口发送这么大批块需要物理时间。通过计算本轮排空实际用时，
-  // 动态收缩下一个 setTimeout 的等待跨度，完美保持原工具严格的”大体 5 秒重新报一遍”频率。
-  const processingTime = Date.now() - cycleStartTime;
-  const nextDelay = Math.max(100, 5000 - processingTime);
+  isSending = false;
+}
 
-  if (isRunning) {
-    sendInterval = setTimeout(sendLoop, nextDelay);
-  }
+// 立即执行一次发送
+function sendLoop() {
+  sendDataAsync(); // 异步后台执行，不阻塞
 }
 
 ipcMain.handle('start-sending', async () => {
   const openPorts = serialPorts.filter(p => p && p.isOpen);
   if (openPorts.length === 0) return { success: false, message: '串口未打开' };
-  loadDataSync();
 
+  // 如果已经在运行，先清理旧定时器
+  if (sendInterval) {
+    clearInterval(sendInterval);
+    sendInterval = null;
+  }
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  loadDataSync();
   isRunning = true;
+  isSending = false;
   startTime = Date.now();
-  mainWindow.webContents.send('start-time', startTime);
+  if (mainWindow) {
+    mainWindow.webContents.send('start-time', startTime);
+  }
 
   // 每秒更新运行时长
   timerInterval = setInterval(() => {
-    if (isRunning) {
+    if (isRunning && mainWindow) {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
       mainWindow.webContents.send('timer-update', elapsed);
     }
   }, 1000);
 
-  sendLoop();
+  // 精确5秒定时器，发送逻辑异步执行不影响间隔
+  sendLoop(); // 立即发一次
+  sendInterval = setInterval(sendLoop, 5000); // 之后每5秒准时触发
+
+  console.log('[发送启动] 定时器已创建，间隔5秒');
   return { success: true };
 });
 
 ipcMain.handle('stop-sending', async () => {
   isRunning = false;
   if (sendInterval) {
-    clearTimeout(sendInterval);
+    clearInterval(sendInterval);
     sendInterval = null;
   }
   if (timerInterval) {
@@ -267,13 +290,16 @@ ipcMain.handle('refresh-data', async () => {
   loadDataSync();
   startTime = Date.now();
 
-  if (isRunning && sendInterval) {
-    clearTimeout(sendInterval);
-    sendInterval = null;
-  }
-
   if (isRunning) {
+    // 先清掉旧定时器
+    if (sendInterval) {
+      clearInterval(sendInterval);
+      sendInterval = null;
+    }
+    // 立即发一次，然后按5秒周期
     sendLoop();
+    sendInterval = setInterval(sendLoop, 5000);
+    console.log('[刷新] 定时器已重置，间隔5秒');
   }
 
   return { success: true };
