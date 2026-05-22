@@ -25,12 +25,20 @@ function createWindow() {
     width: 720,
     height: 620,
     resizable: false,
+    icon: path.join(__dirname, '../my_data/logo_round.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
     }
   });
   mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
+}
+
+// 设置应用图标
+if (process.platform === 'darwin') {
+  app.whenReady().then(() => {
+    app.dock.setIcon(path.join(__dirname, '../my_data/logo_round.png'));
+  });
 }
 
 app.whenReady().then(createWindow);

@@ -54,12 +54,21 @@ function updateButtons() {
   timerEl.className = isRunning ? 'time-value running' : 'time-value';
 }
 
+// 缓存所有已选串口（用于刷新后恢复）
+let selectedPortsCache = {};
+
 // 填充所有串口选择框（主界面和弹窗）
 function fillAllPortSelects() {
   const selects = [portSelect1, portSelect1Modal, portSelect2Modal, portSelect3Modal, portSelect4Modal];
-  selects.forEach(select => {
+  // 先保存当前选择
+  selects.forEach((select, idx) => {
+    if (select && select.value) {
+      selectedPortsCache[idx] = select.value;
+    }
+  });
+  // 然后重新填充
+  selects.forEach((select, idx) => {
     if (!select) return;
-    const currentValue = select.value;
     select.innerHTML = '<option value="">请选择...</option>';
     availablePorts.forEach(port => {
       const option = document.createElement('option');
@@ -67,7 +76,10 @@ function fillAllPortSelects() {
       option.textContent = port.path;
       select.appendChild(option);
     });
-    select.value = currentValue;
+    // 恢复之前的选择
+    if (selectedPortsCache[idx]) {
+      select.value = selectedPortsCache[idx];
+    }
   });
 }
 
@@ -117,11 +129,11 @@ connectBtn.addEventListener('click', async () => {
     timerEl.textContent = '00:00:00';
     startTimeEl.textContent = '--:--:--';
   } else {
-    const selectedPorts = getSelectedPorts();
+    let selectedPorts = getSelectedPorts();
+    // 如果弹窗没选，用主界面的
     if (selectedPorts.length === 0) {
-      // 检查主界面串口
       if (portSelect1.value) {
-        selectedPorts.push({ path: portSelect1.value, index: 0 });
+        selectedPorts = [{ path: portSelect1.value, index: 0 }];
       } else {
         alert('请先选择串口（可在设置中选择多个串口）');
         return;
@@ -249,7 +261,11 @@ ipcRenderer.on('data-update', (event, hexString, index, total) => {
 
 settingsBtn.addEventListener('click', () => {
   baudSelectModal.value = currentBaudRate.toString();
-  portSelect1Modal.value = portSelect1.value;
+  // 打开弹窗时先刷新串口列表
+  refreshPorts().then(() => {
+    // 然后同步主界面选择的串口
+    portSelect1Modal.value = portSelect1.value;
+  });
   settingsModal.classList.add('show');
 });
 
@@ -268,9 +284,13 @@ settingsModal.addEventListener('click', (e) => {
 
 saveSettingsBtn.addEventListener('click', () => {
   currentBaudRate = parseInt(baudSelectModal.value, 10);
-  // 同步主界面串口选择
-  if (portSelect1Modal.value) {
-    portSelect1.value = portSelect1Modal.value;
+  // 同步主界面串口选择（用第一个非空的）
+  const selects = [portSelect1Modal, portSelect2Modal, portSelect3Modal, portSelect4Modal];
+  for (const select of selects) {
+    if (select && select.value) {
+      portSelect1.value = select.value;
+      break;
+    }
   }
   closeSettings();
 });
