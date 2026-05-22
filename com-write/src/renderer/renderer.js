@@ -1,20 +1,42 @@
 const { ipcRenderer } = require('electron');
 
-const portSelect = document.getElementById('portSelect');
-const baudSelect = document.getElementById('baudSelect');
 const initBtn = document.getElementById('initBtn');
 const connectBtn = document.getElementById('connectBtn');
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
 const refreshBtn = document.getElementById('refreshBtn');
 const copyBtn = document.getElementById('copyBtn');
+const clearBtn = document.getElementById('clearBtn');
 const timerEl = document.getElementById('timer');
 const startTimeEl = document.getElementById('startTime');
 const dataDisplay = document.getElementById('dataDisplay');
 const loadingOverlay = document.getElementById('loadingOverlay');
+const portSelect1 = document.getElementById('portSelect1');
+
+// 帮助按钮元素
+const helpBtn = document.getElementById('helpBtn');
+
+// 设置弹窗元素
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsModal = document.getElementById('settingsModal');
+const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+const baudSelectModal = document.getElementById('baudSelectModal');
+const portSelect1Modal = document.getElementById('portSelect1Modal');
+const portSelect2Modal = document.getElementById('portSelect2Modal');
+const portSelect3Modal = document.getElementById('portSelect3Modal');
+const portSelect4Modal = document.getElementById('portSelect4Modal');
+
+// 帮助弹窗元素
+const helpModal = document.getElementById('helpModal');
+const closeHelpBtn = document.getElementById('closeHelpBtn');
+const knowBtn = document.getElementById('knowBtn');
 
 let isPortOpen = false;
 let isRunning = false;
+let availablePorts = []; // 缓存可用串口列表
+let currentBaudRate = 115200; // 当前波特率
 
 function formatTime(seconds) {
   const h = Math.floor(seconds / 3600);
@@ -25,22 +47,45 @@ function formatTime(seconds) {
 
 function updateButtons() {
   connectBtn.textContent = isPortOpen ? '断开' : '连接';
-  connectBtn.className = isPortOpen ? 'btn btn-danger' : 'btn btn-primary';
+  connectBtn.className = isPortOpen ? 'connect-btn connect-btn-danger' : 'connect-btn connect-btn-primary';
   startBtn.disabled = !isPortOpen || isRunning;
   stopBtn.disabled = !isRunning;
   refreshBtn.disabled = !isPortOpen;
   timerEl.className = isRunning ? 'time-value running' : 'time-value';
 }
 
-async function refreshPorts() {
-  const ports = await ipcRenderer.invoke('get-serial-ports');
-  portSelect.innerHTML = '<option value="">请选择...</option>';
-  ports.forEach(port => {
-    const option = document.createElement('option');
-    option.value = port.path;
-    option.textContent = port.path;
-    portSelect.appendChild(option);
+// 填充所有串口选择框（主界面和弹窗）
+function fillAllPortSelects() {
+  const selects = [portSelect1, portSelect1Modal, portSelect2Modal, portSelect3Modal, portSelect4Modal];
+  selects.forEach(select => {
+    if (!select) return;
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">请选择...</option>';
+    availablePorts.forEach(port => {
+      const option = document.createElement('option');
+      option.value = port.path;
+      option.textContent = port.path;
+      select.appendChild(option);
+    });
+    select.value = currentValue;
   });
+}
+
+async function refreshPorts() {
+  availablePorts = await ipcRenderer.invoke('get-serial-ports');
+  fillAllPortSelects();
+}
+
+// 获取所有选择的串口（从弹窗的4个串口）
+function getSelectedPorts() {
+  const ports = [];
+  const selects = [portSelect1Modal, portSelect2Modal, portSelect3Modal, portSelect4Modal];
+  selects.forEach((select, index) => {
+    if (select && select.value) {
+      ports.push({ path: select.value, index });
+    }
+  });
+  return ports;
 }
 
 // 重置：停止发送，关闭串口，刷新端口
@@ -52,7 +97,6 @@ initBtn.addEventListener('click', async () => {
   await refreshPorts();
   isPortOpen = false;
   isRunning = false;
-  portSelect.value = '';
   timerEl.textContent = '00:00:00';
   startTimeEl.textContent = '--:--:--';
   updateButtons();
@@ -63,7 +107,7 @@ initBtn.addEventListener('click', async () => {
   }, 1000);
 });
 
-// 连接/断开 串口
+// 连接/断开 串口（支持多串口）
 connectBtn.addEventListener('click', async () => {
   if (isPortOpen) {
     await ipcRenderer.invoke('stop-sending');
@@ -73,16 +117,28 @@ connectBtn.addEventListener('click', async () => {
     timerEl.textContent = '00:00:00';
     startTimeEl.textContent = '--:--:--';
   } else {
-    if (!portSelect.value) {
-      alert('请先选择串口');
-      return;
+    const selectedPorts = getSelectedPorts();
+    if (selectedPorts.length === 0) {
+      // 检查主界面串口
+      if (portSelect1.value) {
+        selectedPorts.push({ path: portSelect1.value, index: 0 });
+      } else {
+        alert('请先选择串口（可在设置中选择多个串口）');
+        return;
+      }
     }
-    const baudRate = parseInt(baudSelect.value, 10);
-    const result = await ipcRenderer.invoke('open-serial', portSelect.value, baudRate);
-    if (result.success) {
+
+    let allSuccess = true;
+    for (let i = 0; i < selectedPorts.length; i++) {
+      const result = await ipcRenderer.invoke('open-serial', selectedPorts[i].path, currentBaudRate, selectedPorts[i].index);
+      if (!result.success) {
+        alert(`串口${i + 1}打开失败: ${result.message}`);
+        allSuccess = false;
+        break;
+      }
+    }
+    if (allSuccess) {
       isPortOpen = true;
-    } else {
-      alert('串口打开失败: ' + result.message);
     }
   }
   updateButtons();
@@ -141,14 +197,32 @@ copyBtn.addEventListener('click', async () => {
     copyBtn.textContent = '已复制';
     setTimeout(() => {
       copyBtn.textContent = originalText;
-    }, 1000);
+    }, 500);
   } catch (e) {
     alert('复制失败');
   }
 });
 
+// 更新按钮显示状态
+function updateDataButtons() {
+  if (dataDisplay.textContent.trim() === '') {
+    copyBtn.classList.add('btn-hidden');
+    clearBtn.classList.add('btn-hidden');
+  } else {
+    copyBtn.classList.remove('btn-hidden');
+    clearBtn.classList.remove('btn-hidden');
+  }
+}
+
+// 清空按钮
+clearBtn.addEventListener('click', () => {
+  dataDisplay.textContent = '';
+  lineCount = 1;
+  updateDataButtons();
+});
+
 const MAX_LINES = 10000;
-let lineCount = 0;
+let lineCount = 1;
 
 function formatDateTime(date) {
   const y = date.getFullYear();
@@ -164,15 +238,63 @@ function formatDateTime(date) {
 ipcRenderer.on('data-update', (event, hexString, index, total) => {
   const time = formatDateTime(new Date());
   const line = `[${time}] 发送了数据，编号：${lineCount}\n`;
-  if(dataDisplay.textContent.includes("...")){
-    dataDisplay.textContent = ""
-  }
   dataDisplay.textContent += line;
   lineCount++;
+  updateDataButtons();
   // 自动滚动到底部
   dataDisplay.scrollTop = dataDisplay.scrollHeight;
+});
+
+// ========== 设置弹窗逻辑 ==========
+
+settingsBtn.addEventListener('click', () => {
+  baudSelectModal.value = currentBaudRate.toString();
+  portSelect1Modal.value = portSelect1.value;
+  settingsModal.classList.add('show');
+});
+
+function closeSettings() {
+  settingsModal.classList.remove('show');
+}
+
+closeSettingsBtn.addEventListener('click', closeSettings);
+cancelSettingsBtn.addEventListener('click', closeSettings);
+
+settingsModal.addEventListener('click', (e) => {
+  if (e.target === settingsModal) {
+    closeSettings();
+  }
+});
+
+saveSettingsBtn.addEventListener('click', () => {
+  currentBaudRate = parseInt(baudSelectModal.value, 10);
+  // 同步主界面串口选择
+  if (portSelect1Modal.value) {
+    portSelect1.value = portSelect1Modal.value;
+  }
+  closeSettings();
+});
+
+// ========== 帮助弹窗逻辑 ==========
+
+helpBtn.addEventListener('click', () => {
+  helpModal.classList.add('show');
+});
+
+function closeHelp() {
+  helpModal.classList.remove('show');
+}
+
+closeHelpBtn.addEventListener('click', closeHelp);
+knowBtn.addEventListener('click', closeHelp);
+
+helpModal.addEventListener('click', (e) => {
+  if (e.target === helpModal) {
+    closeHelp();
+  }
 });
 
 // 初始化应用
 refreshPorts();
 updateButtons();
+updateDataButtons();

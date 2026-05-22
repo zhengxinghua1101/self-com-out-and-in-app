@@ -231,8 +231,8 @@
         <span>接收的数据</span>
         <div class="panel-header-actions">
           <button class="btn btn-sm btn-primary" id="copyBtn" disabled>复制</button>
+          <button class="btn btn-sm btn-secondary" id="clearBtn" disabled>清除</button>
           <button class="btn btn-sm btn-success" id="downloadBtn" disabled>下载</button>
-          <button class="btn btn-sm btn-secondary" id="clearBtn" disabled>清空</button>
         </div>
       </div>
       <div class="data-display" id="dataDisplay"></div>
@@ -249,6 +249,7 @@
     const portInfoEl = document.getElementById('portInfo');
     const messageEl = document.getElementById('message');
     const dataDisplayEl = document.getElementById('dataDisplay');
+    let dataCounter = 1;
 
     function showMessage(text, type = 'success') {
       messageEl.textContent = text;
@@ -292,7 +293,8 @@
 
     clearBtn.addEventListener('click', () => {
       dataDisplayEl.innerHTML = '';
-      showMessage('数据已清空', 'success');
+      dataCounter = 1;
+      showMessage('数据已清除', 'success');
       updateDataActions();
     });
 
@@ -340,6 +342,11 @@
       });
 
       navigator.clipboard.writeText(content.trim()).then(() => {
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '已复制';
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+        }, 1000);
         showMessage('数据已复制到剪贴板', 'success');
       }).catch(() => {
         showMessage('复制失败', 'error');
@@ -349,7 +356,8 @@
     window.electronAPI.onDataReceived((data) => {
       const line = document.createElement('div');
       line.className = 'data-line';
-      line.textContent = data;
+      line.textContent = `${dataCounter}. ${data}`;
+      dataCounter++;
       dataDisplayEl.appendChild(line);
       dataDisplayEl.scrollTop = dataDisplayEl.scrollHeight;
       updateDataActions();

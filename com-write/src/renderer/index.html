@@ -50,8 +50,229 @@
 
     .row {
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
+    }
+
+    /* 图标按钮 */
+    .icon-btn {
+      padding: 6px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .icon-btn:hover {
+      background: #f2f3f5;
+    }
+    .icon-svg {
+      width: 16px;
+      height: 16px;
+      fill: #86909c;
+    }
+    .icon-btn-primary .icon-svg {
+      fill: #1677ff;
+    }
+
+    /* 弹窗通用样式 */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .modal-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f2f3f5;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1d2129;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #86909c;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      border-radius: 4px;
+    }
+    .modal-close:hover {
+      background: #f2f3f5;
+      color: #1d2129;
+    }
+    .modal-body {
+      margin-bottom: 20px;
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 16px;
+      border-top: 1px solid #f2f3f5;
+    }
+    .btn-secondary {
+      padding: 8px 16px;
+      background: #f7f8fa;
+      border: 1px solid #e5e6eb;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #4e5969;
+      cursor: pointer;
+    }
+    .btn-secondary:hover {
+      background: #f2f3f5;
+    }
+    .btn-primary {
+      padding: 8px 20px;
+      background: #1677ff;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      color: white;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      background: #4080ff;
+    }
+
+    /* 步骤样式 */
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .step-number {
+      width: 24px;
+      height: 24px;
+      background: #1677ff;
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .step-number.warning {
+      background: #ff7d00;
+    }
+    .step-text {
+      font-size: 14px;
+      color: #4e5969;
+      line-height: 1.5;
+      padding-top: 2px;
+    }
+    .step-text strong {
+      color: #ff7d00;
+    }
+
+    /* 下拉框样式 */
+    .select-field {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e5e6eb;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      background: #f7f8fa;
+      color: #1d2129;
+    }
+    .select-field:focus {
+      border-color: #1677ff;
+      background: white;
+    }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      color: #4e5969;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    /* 串口选择样式 */
+    .port-label {
+      font-size: 13px;
+      color: #4e5969;
+      font-weight: 500;
+      flex-shrink: 0;
+      width: 55px;
+    }
+    .port-select {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #e5e6eb;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+      background: #f7f8fa;
+      color: #1d2129;
+    }
+    .port-select:focus {
+      border-color: #1677ff;
+      background: white;
+    }
+
+    /* 连接按钮 */
+    .connect-btn {
+      padding: 10px 28px;
+      font-size: 15px;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .connect-btn-primary {
+      background: #1677ff;
+      color: white;
+    }
+    .connect-btn-primary:hover {
+      background: #4080ff;
+    }
+    .connect-btn-danger {
+      background: #f53f3f;
+      color: white;
+    }
+    .connect-btn-danger:hover {
+      background: #ff6b6b;
     }
 
     select {
@@ -156,17 +377,28 @@
       align-items: center;
       margin-bottom: 10px;
     }
-    .btn-copy {
+    .btn-copy, .btn-clear {
       padding: 4px 10px;
       font-size: 12px;
-      background: #1677ff;
       color: white;
       border: none;
       border-radius: 4px;
       cursor: pointer;
     }
+    .btn-copy {
+      background: #1677ff;
+    }
     .btn-copy:hover {
       background: #4080ff;
+    }
+    .btn-clear {
+      background: #f53f3f;
+    }
+    .btn-clear:hover {
+      background: #ff6b6b;
+    }
+    .btn-hidden {
+      display: none;
     }
     .data-display {
       flex: 1;
@@ -227,22 +459,32 @@
 
     <!-- 第一层：串口设置 -->
     <div class="card">
-      <div class="card-title">串口设置</div>
+      <div class="row" style="justify-content: space-between; margin-bottom: 16px;">
+        <div class="card-title" style="margin-bottom: 0;">串口设置</div>
+        <div class="row" style="gap: 8px;">
+          <button class="icon-btn" id="helpBtn" title="使用帮助">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/>
+            </svg>
+          </button>
+          <button class="icon-btn" id="settingsBtn" title="设置">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+          </button>
+          <button class="icon-btn icon-btn-primary" id="initBtn" title="重置">
+            <svg class="icon-svg" viewBox="0 0 24 24">
+              <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
       <div class="row">
-        <button class="btn btn-primary" id="initBtn">重置</button>
-        <select id="portSelect">
+        
+        <select class="port-select" id="portSelect1">
           <option value="">请选择...</option>
         </select>
-        <select id="baudSelect" style="flex: 0 0 100px;">
-          <option value="9600">9600</option>
-          <option value="19200">19200</option>
-          <option value="38400">38400</option>
-          <option value="57600">57600</option>
-          <option value="115200" selected>115200</option>
-          <option value="230400">230400</option>
-          <option value="460800">460800</option>
-        </select>
-        <button class="btn btn-primary" id="connectBtn">连接</button>
+        <button class="connect-btn connect-btn-primary" id="connectBtn">连接</button>
       </div>
     </div>
 
@@ -271,9 +513,12 @@
     <div class="card data-section">
       <div class="data-header">
         <div class="card-title" style="margin-bottom: 0;">当前发送数据</div>
-        <button class="btn-copy" id="copyBtn">复制</button>
+        <div class="row" style="gap: 6px;">
+          <button class="btn-clear" id="clearBtn">清空</button>
+          <button class="btn-copy" id="copyBtn">复制</button>
+        </div>
       </div>
-      <div class="data-display" id="dataDisplay">等待发送...</div>
+      <div class="data-display" id="dataDisplay"></div>
     </div>
 
   </div>
@@ -281,6 +526,96 @@
   <!-- Loading 遮罩 -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="loading-spinner"></div>
+  </div>
+
+  <!-- 设置弹窗 -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">串口设置</div>
+        <button class="modal-close" id="closeSettingsBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">波特率</label>
+          <select class="select-field" id="baudSelectModal">
+            <option value="9600">9600</option>
+            <option value="19200">19200</option>
+            <option value="38400">38400</option>
+            <option value="57600">57600</option>
+            <option value="115200" selected>115200</option>
+            <option value="230400">230400</option>
+            <option value="460800">460800</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">多串口设置（可同时选择多个串口发送）</label>
+        </div>
+        <div class="row" style="margin-bottom: 10px;">
+          <span class="port-label">串口1</span>
+          <select class="port-select" id="portSelect1Modal">
+            <option value="">请选择...</option>
+          </select>
+        </div>
+        <div class="row" style="margin-bottom: 10px;">
+          <span class="port-label">串口2</span>
+          <select class="port-select" id="portSelect2Modal">
+            <option value="">请选择...</option>
+          </select>
+        </div>
+        <div class="row" style="margin-bottom: 10px;">
+          <span class="port-label">串口3</span>
+          <select class="port-select" id="portSelect3Modal">
+            <option value="">请选择...</option>
+          </select>
+        </div>
+        <div class="row">
+          <span class="port-label">串口4</span>
+          <select class="port-select" id="portSelect4Modal">
+            <option value="">请选择...</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="cancelSettingsBtn">取消</button>
+        <button class="btn btn-primary" id="saveSettingsBtn">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 帮助弹窗 -->
+  <div class="modal-overlay" id="helpModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">操作步骤</div>
+        <button class="modal-close" id="closeHelpBtn">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-text">选择需要发送数据的串口</div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-text">点击连接按钮连接串口</div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-text">点击开始按钮开始发送数据</div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">4</div>
+          <div class="step-text">插入WIFI盒的传感器</div>
+        </div>
+        <div class="step-item">
+          <div class="step-number warning">5</div>
+          <div class="step-text"><strong>插入WIFI盒的电源（一定最后插电源，不然容易不生效）</strong></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="knowBtn">我知道了</button>
+      </div>
+    </div>
   </div>
 
   <script src="renderer.js"></script>

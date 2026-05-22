@@ -1,5 +1,4 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
-const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const fs = require('fs');
 const { SerialPort } = require('serialport');
@@ -30,7 +29,6 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
-  autoUpdater.checkForUpdatesAndNotify();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -45,19 +43,6 @@ app.on('window-all-closed', () => {
     virtualPortProcess.kill();
   }
   if (!isMac) app.quit();
-});
-
-// 自动更新事件
-autoUpdater.on('update-available', () => {
-  if (mainWindow) mainWindow.webContents.send('update-available');
-});
-
-autoUpdater.on('update-downloaded', () => {
-  if (mainWindow) mainWindow.webContents.send('update-downloaded');
-});
-
-ipcMain.handle('restart-and-update', () => {
-  autoUpdater.quitAndInstall();
 });
 
 // Windows平台：检查com0com是否安装

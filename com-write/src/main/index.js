@@ -13,7 +13,7 @@ try {
 } catch (_) {}
 
 let mainWindow;
-let serialPort = null;
+let serialPorts = []; // 支持多个串口
 let isRunning = false;
 let sendInterval = null;
 let timerInterval = null;
@@ -22,7 +22,7 @@ let startTime = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 780,
+    width: 720,
     height: 620,
     resizable: false,
     webPreferences: {
@@ -82,23 +82,32 @@ ipcMain.handle('get-serial-ports', async () => {
   }
 });
 
-ipcMain.handle('open-serial', async (event, portPath, baudRate = 115200) => {
-  if (serialPort && serialPort.isOpen) {
-    await serialPort.close();
+ipcMain.handle('open-serial', async (event, portPath, baudRate = 115200, index = 0) => {
+  // 关闭指定索引的旧串口
+  if (serialPorts[index] && serialPorts[index].isOpen) {
+    await serialPorts[index].close();
   }
   return new Promise(resolve => {
-    serialPort = new SerialPort({ path: portPath, baudRate, autoOpen: false });
-    serialPort.open(err => {
-      err ? resolve({ success: false, message: err.message }) : resolve({ success: true });
+    const port = new SerialPort({ path: portPath, baudRate, autoOpen: false });
+    port.open(err => {
+      if (err) {
+        resolve({ success: false, message: err.message });
+      } else {
+        serialPorts[index] = port;
+        resolve({ success: true });
+      }
     });
   });
 });
 
 ipcMain.handle('close-serial', async () => {
-  if (serialPort && serialPort.isOpen) {
-    await serialPort.close();
+  // 关闭所有串口
+  for (const port of serialPorts) {
+    if (port && port.isOpen) {
+      await port.close();
+    }
   }
-  serialPort = null;
+  serialPorts = [];
   isRunning = false;
   if (timerInterval) {
     clearInterval(timerInterval);
@@ -151,25 +160,29 @@ ipcMain.handle('load-data', async () => {
 
 // ========== 发送控制【重构发送逻辑，引入异步等待流控机制】 ==========
 
-// 封装原生的 write，配合 drain 实现等待硬件缓冲区完全排空的阻塞 Promise
-function writeAndDrain(packet) {
-  return new Promise((resolve, reject) => {
-    if (!serialPort || !serialPort.isOpen) return reject(new Error('串口未打开'));
-    
-    serialPort.write(packet, (err) => {
-      if (err) return reject(err);
-      
-      // 🌟 等待当前的 512 字节硬件数据完全在电平线上发射完毕，单片机安全接收后，才释放阻塞
-      serialPort.drain((drainErr) => {
-        if (drainErr) return reject(drainErr);
-        resolve();
+// 封装原生的 write，配合 drain 实现等待硬件缓冲区完全排空的阻塞 Promise（支持多串口）
+async function writeAndDrainAll(packet) {
+  const openPorts = serialPorts.filter(p => p && p.isOpen);
+  if (openPorts.length === 0) throw new Error('无可用串口');
+
+  const promises = openPorts.map(port => {
+    return new Promise((resolve, reject) => {
+      port.write(packet, (err) => {
+        if (err) return reject(err);
+        port.drain((drainErr) => {
+          if (drainErr) return reject(drainErr);
+          resolve();
+        });
       });
     });
   });
+
+  await Promise.all(promises);
 }
 
 async function sendLoop() {
-  if (!isRunning || !serialPort || !serialPort.isOpen) return;
+  const openPorts = serialPorts.filter(p => p && p.isOpen);
+  if (!isRunning || openPorts.length === 0) return;
 
   const cycleStartTime = Date.now(); // 记录当前大包开始倾倒的时间点
 
@@ -178,9 +191,9 @@ async function sendLoop() {
     // 改用 async-for 串行异步循环，一包发完并排空，才发下一包
     for (let i = 0; i < dataPackets.length; i++) {
       if (!isRunning) break; // 允许随时在中途点击停止
-      
-      await writeAndDrain(dataPackets[i]);
-      
+
+      await writeAndDrainAll(dataPackets[i]);
+
       // 给单片机预留 15 毫秒的基础时间间隙去处理中断并写入 Flash，防止连续轰炸导致片上死机
       await new Promise(resolve => setTimeout(resolve, 15));
     }
@@ -198,7 +211,7 @@ async function sendLoop() {
 
   // 🌟【优化点三】：流控时间平滑补偿
   // 串口发送这么大批块需要物理时间。通过计算本轮排空实际用时，
-  // 动态收缩下一个 setTimeout 的等待跨度，完美保持原工具严格的“大体 5 秒重新报一遍”频率。
+  // 动态收缩下一个 setTimeout 的等待跨度，完美保持原工具严格的”大体 5 秒重新报一遍”频率。
   const processingTime = Date.now() - cycleStartTime;
   const nextDelay = Math.max(100, 5000 - processingTime);
 
@@ -208,7 +221,8 @@ async function sendLoop() {
 }
 
 ipcMain.handle('start-sending', async () => {
-  if (!serialPort || !serialPort.isOpen) return { success: false, message: '串口未打开' };
+  const openPorts = serialPorts.filter(p => p && p.isOpen);
+  if (openPorts.length === 0) return { success: false, message: '串口未打开' };
   loadDataSync();
 
   isRunning = true;
