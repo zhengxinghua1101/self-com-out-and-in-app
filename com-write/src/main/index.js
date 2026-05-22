@@ -16,13 +16,13 @@ let mainWindow;
 let serialPort = null;
 let isRunning = false;
 let sendInterval = null;
+let timerInterval = null;
 let dataPackets = [];
-let currentPacketIndex = 0;
 let startTime = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 520,
+    width: 780,
     height: 620,
     resizable: false,
     webPreferences: {
@@ -99,10 +99,15 @@ ipcMain.handle('close-serial', async () => {
     await serialPort.close();
   }
   serialPort = null;
+  isRunning = false;
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
   return { success: true };
 });
 
-// ========== 数据文件操作 ==========
+// ========== 数据文件操作【仅优化了内部的 512 字节分块打包逻辑】 ==========
 
 function loadDataSync() {
   // 兼容Windows和macOS的路径处理
@@ -111,9 +116,24 @@ function loadDataSync() {
     // 使用UTF-8编码，Windows兼容
     const content = fs.readFileSync(dataPath, { encoding: 'utf-8', flag: 'r' });
     // 处理Windows换行符(\r\n)和Unix换行符(\n)
-    const lines = content.split(/\r?\n/).filter(line => line.trim());
-    dataPackets = lines.map(line => Buffer.from(line.trim(), 'hex'));
-    return dataPackets.length;
+    const lines = content.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+
+    // 🌟【优化点一】：根据抓包数据，每行原始数据是 8 个字节（16个Hex字符）。
+    // 512 字节恰好等于 64 行数据 (512 / 8 = 64)。我们按 64 行物理块分包。
+    const LINES_PER_BLOCK = 64;
+    dataPackets = [];
+    
+    for (let i = 0; i < lines.length; i += LINES_PER_BLOCK) {
+      const groupLines = lines.slice(i, i + LINES_PER_BLOCK);
+      
+      // 将整组 64 行的十六进制字符串无缝拼接（去掉空格和换行），一次性转化为 Buffer 块
+      const blockHexString = groupLines.join('');
+      const groupBuffer = Buffer.from(blockHexString, 'hex');
+      
+      dataPackets.push(groupBuffer);
+    }
+
+    return lines.length;
   } catch (e) {
     console.error('加载数据文件失败:', e);
     throw e;
@@ -129,37 +149,80 @@ ipcMain.handle('load-data', async () => {
   }
 });
 
-// ========== 发送控制 ==========
+// ========== 发送控制【重构发送逻辑，引入异步等待流控机制】 ==========
 
-function sendLoop() {
+// 封装原生的 write，配合 drain 实现等待硬件缓冲区完全排空的阻塞 Promise
+function writeAndDrain(packet) {
+  return new Promise((resolve, reject) => {
+    if (!serialPort || !serialPort.isOpen) return reject(new Error('串口未打开'));
+    
+    serialPort.write(packet, (err) => {
+      if (err) return reject(err);
+      
+      // 🌟 等待当前的 512 字节硬件数据完全在电平线上发射完毕，单片机安全接收后，才释放阻塞
+      serialPort.drain((drainErr) => {
+        if (drainErr) return reject(drainErr);
+        resolve();
+      });
+    });
+  });
+}
+
+async function sendLoop() {
   if (!isRunning || !serialPort || !serialPort.isOpen) return;
 
-  if (currentPacketIndex >= dataPackets.length) {
-    currentPacketIndex = 0; // 循环发送
+  const cycleStartTime = Date.now(); // 记录当前大包开始倾倒的时间点
+
+  try {
+    // 🌟【优化点二】：摒弃原本导致数据挤爆乱码的 forEach 盲发
+    // 改用 async-for 串行异步循环，一包发完并排空，才发下一包
+    for (let i = 0; i < dataPackets.length; i++) {
+      if (!isRunning) break; // 允许随时在中途点击停止
+      
+      await writeAndDrain(dataPackets[i]);
+      
+      // 给单片机预留 15 毫秒的基础时间间隙去处理中断并写入 Flash，防止连续轰炸导致片上死机
+      await new Promise(resolve => setTimeout(resolve, 15));
+    }
+
+    // 发送数据内容到前端显示（显示第一组作为示例）
+    if (isRunning) {
+      const firstPacketHex = dataPackets[0]?.toString('hex').toUpperCase() || '';
+      mainWindow.webContents.send('data-update', firstPacketHex, 0, dataPackets.length);
+    }
+
+  } catch (err) {
+    console.error('串口数据倾倒失败:', err);
+    mainWindow.webContents.send('data-update', 'ERROR: 写入失败', 0, 0);
   }
 
-  const packet = dataPackets[currentPacketIndex];
-  serialPort.write(packet);
+  // 🌟【优化点三】：流控时间平滑补偿
+  // 串口发送这么大批块需要物理时间。通过计算本轮排空实际用时，
+  // 动态收缩下一个 setTimeout 的等待跨度，完美保持原工具严格的“大体 5 秒重新报一遍”频率。
+  const processingTime = Date.now() - cycleStartTime;
+  const nextDelay = Math.max(100, 5000 - processingTime);
 
-  // 发送数据内容到前端显示
-  const hexString = packet.toString('hex').toUpperCase();
-  mainWindow.webContents.send('data-update', hexString, currentPacketIndex, dataPackets.length);
-
-  currentPacketIndex++;
-
-  const elapsed = Math.floor((Date.now() - startTime) / 1000);
-  mainWindow.webContents.send('timer-update', elapsed);
-
-  sendInterval = setTimeout(sendLoop, 67); // 15Hz
+  if (isRunning) {
+    sendInterval = setTimeout(sendLoop, nextDelay);
+  }
 }
 
 ipcMain.handle('start-sending', async () => {
   if (!serialPort || !serialPort.isOpen) return { success: false, message: '串口未打开' };
-  if (dataPackets.length === 0) loadDataSync();
+  loadDataSync();
 
   isRunning = true;
-  currentPacketIndex = 0;
   startTime = Date.now();
+  mainWindow.webContents.send('start-time', startTime);
+
+  // 每秒更新运行时长
+  timerInterval = setInterval(() => {
+    if (isRunning) {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+      mainWindow.webContents.send('timer-update', elapsed);
+    }
+  }, 1000);
+
   sendLoop();
   return { success: true };
 });
@@ -170,17 +233,24 @@ ipcMain.handle('stop-sending', async () => {
     clearTimeout(sendInterval);
     sendInterval = null;
   }
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
   return { success: true };
 });
 
 ipcMain.handle('refresh-data', async () => {
-  // 重新加载文件，归零，重新开始发
+  // 重新加载文件，时间归零，重新开始发
   loadDataSync();
-  currentPacketIndex = 0;
   startTime = Date.now();
 
   if (isRunning && sendInterval) {
     clearTimeout(sendInterval);
+    sendInterval = null;
+  }
+
+  if (isRunning) {
     sendLoop();
   }
 

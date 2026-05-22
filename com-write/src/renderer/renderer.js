@@ -7,7 +7,9 @@ const connectBtn = document.getElementById('connectBtn');
 const startBtn = document.getElementById('startBtn');
 const stopBtn = document.getElementById('stopBtn');
 const refreshBtn = document.getElementById('refreshBtn');
+const copyBtn = document.getElementById('copyBtn');
 const timerEl = document.getElementById('timer');
+const startTimeEl = document.getElementById('startTime');
 const dataDisplay = document.getElementById('dataDisplay');
 const loadingOverlay = document.getElementById('loadingOverlay');
 
@@ -27,7 +29,7 @@ function updateButtons() {
   startBtn.disabled = !isPortOpen || isRunning;
   stopBtn.disabled = !isRunning;
   refreshBtn.disabled = !isPortOpen;
-  timerEl.className = isRunning ? 'timer-value running' : 'timer-value';
+  timerEl.className = isRunning ? 'time-value running' : 'time-value';
 }
 
 async function refreshPorts() {
@@ -52,6 +54,7 @@ initBtn.addEventListener('click', async () => {
   isRunning = false;
   portSelect.value = '';
   timerEl.textContent = '00:00:00';
+  startTimeEl.textContent = '--:--:--';
   updateButtons();
 
   // 至少显示 1 秒 loading
@@ -68,6 +71,7 @@ connectBtn.addEventListener('click', async () => {
     isPortOpen = false;
     isRunning = false;
     timerEl.textContent = '00:00:00';
+    startTimeEl.textContent = '--:--:--';
   } else {
     if (!portSelect.value) {
       alert('请先选择串口');
@@ -100,6 +104,7 @@ stopBtn.addEventListener('click', async () => {
   await ipcRenderer.invoke('stop-sending');
   isRunning = false;
   timerEl.textContent = '00:00:00';
+  startTimeEl.textContent = '--:--:--';
   updateButtons();
 });
 
@@ -114,9 +119,32 @@ refreshBtn.addEventListener('click', async () => {
   updateButtons();
 });
 
+// 开始时间更新
+ipcRenderer.on('start-time', (event, timestamp) => {
+  const date = new Date(timestamp);
+  const h = date.getHours().toString().padStart(2, '0');
+  const m = date.getMinutes().toString().padStart(2, '0');
+  const s = date.getSeconds().toString().padStart(2, '0');
+  startTimeEl.textContent = `${h}:${m}:${s}`;
+});
+
 // 计时更新
 ipcRenderer.on('timer-update', (event, seconds) => {
   timerEl.textContent = formatTime(seconds);
+});
+
+// 复制按钮
+copyBtn.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(dataDisplay.textContent);
+    const originalText = copyBtn.textContent;
+    copyBtn.textContent = '已复制';
+    setTimeout(() => {
+      copyBtn.textContent = originalText;
+    }, 1000);
+  } catch (e) {
+    alert('复制失败');
+  }
 });
 
 const MAX_LINES = 10000;
@@ -135,18 +163,12 @@ function formatDateTime(date) {
 // 发送数据更新
 ipcRenderer.on('data-update', (event, hexString, index, total) => {
   const time = formatDateTime(new Date());
-  const line = `[${time}] 包${index + 1}/${total}: ${hexString}\n`;
-
+  const line = `[${time}] 发送了数据，编号：${lineCount}\n`;
+  if(dataDisplay.textContent.includes("...")){
+    dataDisplay.textContent = ""
+  }
   dataDisplay.textContent += line;
   lineCount++;
-
-  // 超过最大行数时，截取后面的内容
-  if (lineCount > MAX_LINES) {
-    const lines = dataDisplay.textContent.split('\n');
-    dataDisplay.textContent = lines.slice(-MAX_LINES).join('\n');
-    lineCount = MAX_LINES;
-  }
-
   // 自动滚动到底部
   dataDisplay.scrollTop = dataDisplay.scrollHeight;
 });

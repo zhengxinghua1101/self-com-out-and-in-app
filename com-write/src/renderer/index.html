@@ -27,7 +27,7 @@
 
     .container {
       width: 100%;
-      max-width: 470px;
+      max-width: 705px;
       height: 100%;
       display: flex;
       flex-direction: column;
@@ -114,20 +114,31 @@
       font-size: 14px;
     }
 
-    /* 计时器 */
-    .timer-section {
+    /* 时间卡片 */
+    .time-row {
       display: flex;
+      gap: 10px;
+    }
+    .time-card {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 10px 0;
+      padding: 12px 0;
     }
-    .timer-value {
-      font-size: 56px;
+    .time-label {
+      font-size: 12px;
+      color: #86909c;
+      margin-bottom: 6px;
+    }
+    .time-value {
+      font-size: 32px;
       font-weight: 300;
       color: #1d2129;
       font-family: 'SF Mono', Monaco, Consolas, monospace;
     }
-    .timer-value.running {
+    .time-value.running {
       color: #00b42a;
       font-weight: 400;
     }
@@ -138,6 +149,24 @@
       min-height: 0;
       display: flex;
       flex-direction: column;
+    }
+    .data-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .btn-copy {
+      padding: 4px 10px;
+      font-size: 12px;
+      background: #1677ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-copy:hover {
+      background: #4080ff;
     }
     .data-display {
       flex: 1;
@@ -226,14 +255,24 @@
       </div>
     </div>
 
-    <!-- 第三层：计时 -->
-    <div class="card timer-section">
-      <div class="timer-value" id="timer">00:00:00</div>
+    <!-- 第三层：时间显示 - 开始时间和运行时长 -->
+    <div class="time-row">
+      <div class="card time-card">
+        <div class="time-label">开始时间</div>
+        <div class="time-value" id="startTime">--:--:--</div>
+      </div>
+      <div class="card time-card">
+        <div class="time-label">运行时长</div>
+        <div class="time-value" id="timer">00:00:00</div>
+      </div>
     </div>
 
     <!-- 第四层：发送内容 -->
     <div class="card data-section">
-      <div class="card-title">当前发送数据</div>
+      <div class="data-header">
+        <div class="card-title" style="margin-bottom: 0;">当前发送数据</div>
+        <button class="btn-copy" id="copyBtn">复制</button>
+      </div>
       <div class="data-display" id="dataDisplay">等待发送...</div>
     </div>
 
