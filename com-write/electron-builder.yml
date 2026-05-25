@@ -2,10 +2,10 @@ appId: com.snoringdata.writeapp
 productName: 打鼾数据-写入工具
 directories:
   output: release
-  buildResources: resources
+  buildResources: src/my_data/icons
 files:
   - src/**/*
-  - resources/**/*
+  - package.json
   - package.json
   - "!node_modules/**/*.md"
   - "!node_modules/**/*.txt"
@@ -33,26 +33,25 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: resources/icon.ico
+  icon: src/my_data/icons/icon.ico
   signAndEditExecutable: false
   requestedExecutionLevel: asInvoker
-  shortcutName: 打鼾数据-写入工具
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  uninstallerIcon: resources/icon.ico
-  installerIcon: resources/icon.ico
+  uninstallerIcon: src/my_data/icons/icon.ico
+  installerIcon: src/my_data/icons/icon.ico
   uninstallDisplayName: 打鼾数据-写入工具
 mac:
   target: dmg
-  icon: resources/icon.icns
+  icon: src/my_data/icons/icon.icns
   hardenedRuntime: true
   gatekeeperAssess: false
 linux:
   target: AppImage
-  icon: resources/icon.png
+  icon: src/my_data/icons/1024x1024.png
 npmRebuild: true
 nodeGypRebuild: false
 buildDependenciesFromSource: false

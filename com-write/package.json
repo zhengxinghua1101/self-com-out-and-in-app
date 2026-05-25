@@ -10,11 +10,11 @@
     "rebuild": "electron-rebuild -f -w serialport",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "dist:win": "npm run rebuild && electron-builder --win --x64",
-    "dist:mac": "npm run rebuild && electron-builder --mac",
-    "dist:linux": "npm run rebuild && electron-builder --linux",
+    "build:win": "npm run rebuild && electron-builder --win --x64",
+    "build:mac": "npm run rebuild && electron-builder --mac",
+    "build:linux": "npm run rebuild && electron-builder --linux",
     "postinstall": "electron-builder install-app-deps",
-    "generate-icons": "electron-icon-builder --input=./src/my_data/logo.png --output=./build/icons --flatten"
+    "logo": "electron-icon-builder --input=./src/my_data/logo.png --output=./src/my_data --flatten"
   },
   "author": "",
   "license": "MIT",

@@ -55,6 +55,11 @@ if (process.platform === 'darwin') {
   });
 }
 
+// 设置Windows AppUserModelID，确保任务栏图标正确显示
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.snoringdata.writeapp');
+}
+
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
