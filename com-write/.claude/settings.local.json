@@ -5,7 +5,8 @@
       "Bash(node:*)",
       "Bash(logo.svg:*)",
       "Bash(npm run:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(sips -g pixelWidth -g pixelHeight src/my_data/logo.png)"
     ]
   }
 }

@@ -5,6 +5,7 @@ directories:
   buildResources: resources
 files:
   - src/**/*
+  - resources/**/*
   - package.json
   - "!node_modules/**/*.md"
   - "!node_modules/**/*.txt"
@@ -35,11 +36,15 @@ win:
   icon: resources/icon.ico
   signAndEditExecutable: false
   requestedExecutionLevel: asInvoker
+  shortcutName: 打鼾数据-写入工具
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
+  uninstallerIcon: resources/icon.ico
+  installerIcon: resources/icon.ico
+  uninstallDisplayName: 打鼾数据-写入工具
 mac:
   target: dmg
   icon: resources/icon.icns

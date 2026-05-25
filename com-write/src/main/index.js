@@ -22,11 +22,24 @@ let startTime = null;
 let isSending = false; // 标记是否正在发送数据
 
 function createWindow() {
+  let iconPath;
+  if (process.platform === 'win32') {
+    // Windows平台优先使用.ico文件，兼容开发和打包环境
+    const icoPath = path.join(app.isPackaged ? process.resourcesPath : app.getAppPath(), 'resources', 'icon.ico');
+    if (fs.existsSync(icoPath)) {
+      iconPath = icoPath;
+    } else {
+      iconPath = path.join(__dirname, '../my_data/logo.png');
+    }
+  } else {
+    iconPath = path.join(__dirname, '../my_data/logo.png');
+  }
+
   mainWindow = new BrowserWindow({
     width: 720,
     height: 620,
     resizable: false,
-    icon: path.join(__dirname, '../my_data/logo.png'),
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -94,10 +107,31 @@ ipcMain.handle('get-serial-ports', async () => {
 ipcMain.handle('open-serial', async (event, portPath, baudRate = 115200, index = 0) => {
   // 关闭指定索引的旧串口
   if (serialPorts[index] && serialPorts[index].isOpen) {
-    await serialPorts[index].close();
+    try {
+      await serialPorts[index].close();
+    } catch (e) {}
   }
   return new Promise(resolve => {
     const port = new SerialPort({ path: portPath, baudRate, autoOpen: false });
+
+    // 监听串口错误事件（Windows下Operation aborted会触发这个事件）
+    port.on('error', (err) => {
+      console.error(`串口${index}错误:`, err.message);
+      // 发生错误时停止发送，防止崩溃
+      isRunning = false;
+      if (sendInterval) {
+        clearInterval(sendInterval);
+        sendInterval = null;
+      }
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      if (mainWindow) {
+        mainWindow.webContents.send('data-update', `串口错误: ${err.message}`, 0, 0);
+      }
+    });
+
     port.open(err => {
       if (err) {
         resolve({ success: false, message: err.message });
@@ -113,7 +147,11 @@ ipcMain.handle('close-serial', async () => {
   // 关闭所有串口
   for (const port of serialPorts) {
     if (port && port.isOpen) {
-      await port.close();
+      try {
+        await port.close();
+      } catch (e) {
+        console.error('关闭串口失败:', e.message);
+      }
     }
   }
   serialPorts = [];
@@ -181,13 +219,18 @@ async function writeAndDrainAll(packet) {
 
   const promises = openPorts.map(port => {
     return new Promise((resolve, reject) => {
-      port.write(packet, (err) => {
-        if (err) return reject(err);
-        port.drain((drainErr) => {
-          if (drainErr) return reject(drainErr);
-          resolve();
+      try {
+        port.write(packet, (err) => {
+          if (err) return reject(err);
+          port.drain((drainErr) => {
+            if (drainErr) return reject(drainErr);
+            resolve();
+          });
         });
-      });
+      } catch (writeErr) {
+        // Windows下串口断开时write会抛出同步异常 Operation aborted
+        reject(writeErr);
+      }
     });
   });
 
@@ -220,9 +263,19 @@ async function sendDataAsync() {
       mainWindow.webContents.send('data-update', firstPacketHex, 0, dataPackets.length);
     }
   } catch (err) {
-    console.error('串口发送失败:', err);
+    console.error('串口发送失败:', err.message);
+    // 发生写入错误时停止发送，防止循环崩溃
+    isRunning = false;
+    if (sendInterval) {
+      clearInterval(sendInterval);
+      sendInterval = null;
+    }
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
     if (mainWindow) {
-      mainWindow.webContents.send('data-update', 'ERROR: 写入失败', 0, 0);
+      mainWindow.webContents.send('data-update', `错误: ${err.message}`, 0, 0);
     }
   }
 
