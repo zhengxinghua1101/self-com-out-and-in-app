@@ -6,18 +6,50 @@ directories:
 files:
   - src/**/*
   - package.json
-  - node_modules/**/*
+  - "!node_modules/**/*.md"
+  - "!node_modules/**/*.txt"
+  - "!node_modules/**/*.h"
+  - "!node_modules/**/*.cc"
+  - "!node_modules/**/*.cpp"
+  - "!node_modules/**/*.c"
+  - "!node_modules/**/build/**/*"
+  - "!node_modules/**/deps/**/*"
+  - "!node_modules/**/test*/**/*"
+  - "!node_modules/**/doc*/**/*"
+  - "!node_modules/**/example*/**/*"
+  - "!node_modules/**/bin/**/*"
+  - "!**/.DS_Store"
+  - "!**/.gitkeep"
+artifactName: "${productName}-${version}-${arch}.${ext}"
+asar: true
+asarUnpack:
+  - node_modules/@serialport/**/*.node
+  - node_modules/serialport/**/*.node
+compression: maximum
+removePackageScripts: true
 win:
-  target: nsis
+  target:
+    - target: nsis
+      arch:
+        - x64
   icon: resources/icon.ico
   signAndEditExecutable: false
   requestedExecutionLevel: asInvoker
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
 mac:
   target: dmg
   icon: resources/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
 linux:
   target: AppImage
   icon: resources/icon.png
 npmRebuild: true
 nodeGypRebuild: false
 buildDependenciesFromSource: false
+electronDownload:
+  cache: .electron-cache

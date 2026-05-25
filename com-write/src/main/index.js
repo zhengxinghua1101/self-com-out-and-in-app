@@ -26,7 +26,7 @@ function createWindow() {
     width: 720,
     height: 620,
     resizable: false,
-    icon: path.join(__dirname, '../my_data/logo_round.png'),
+    icon: path.join(__dirname, '../my_data/logo.png'),
     webPreferences: {
       nodeIntegration: true,
       contextIsolation: false
@@ -38,7 +38,7 @@ function createWindow() {
 // 设置应用图标
 if (process.platform === 'darwin') {
   app.whenReady().then(() => {
-    app.dock.setIcon(path.join(__dirname, '../my_data/logo_round.png'));
+    app.dock.setIcon(path.join(__dirname, '../my_data/logo.png'));
   });
 }
 

@@ -6,10 +6,13 @@
   "scripts": {
     "start": "electron .",
     "dev": "electron . --debug",
+    "clean": "rm -rf release dist build .electron-cache",
+    "rebuild": "electron-rebuild -f -w serialport",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "dist:win": "electron-builder --win",
-    "dist:mac": "electron-builder --mac",
+    "dist:win": "npm run rebuild && electron-builder --win --x64",
+    "dist:mac": "npm run rebuild && electron-builder --mac",
+    "dist:linux": "npm run rebuild && electron-builder --linux",
     "postinstall": "electron-builder install-app-deps",
     "generate-icons": "electron-icon-builder --input=./src/my_data/logo.png --output=./build/icons --flatten"
   },
@@ -19,6 +22,7 @@
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
     "electron-icon-builder": "^2.0.1",
+    "electron-rebuild": "^3.2.9",
     "electron-reloader": "^1.2.3",
     "sharp": "^0.34.5",
     "to-ico": "^1.1.5"

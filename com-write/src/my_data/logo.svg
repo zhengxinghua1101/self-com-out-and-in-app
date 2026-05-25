@@ -1,18 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <!-- 渐变定义 -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5f7ff" />
+      <stop offset="100%" stop-color="#ffffff" />
+    </linearGradient>
     <linearGradient id="wgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#6B8EFF" />
       <stop offset="50%" stop-color="#9B59B6" />
       <stop offset="100%" stop-color="#E84393" />
     </linearGradient>
   </defs>
-
-  <!-- 背景 -->
-  <rect width="512" height="512" fill="#f8f9ff" rx="90" ry="90"/>
-
-  <!-- 字母 W - 按平台规范比例，视觉居中，约85%填充度 -->
-  <text x="256" y="380" font-family="'Comic Sans MS', 'Chalkboard SE', 'Nunito', 'Varela Round', Arial, sans-serif"
-        font-size="280" font-weight="bold" text-anchor="middle"
+  
+  <rect x="44" y="44" width="424" height="424" fill="url(#bgGradient)" rx="94" ry="94"/>
+  
+  <text x="256" y="328" font-family="'Comic Sans MS', 'Chalkboard SE', 'Nunito', 'Varela Round', Arial, sans-serif"
+        font-size="190" font-weight="bold" text-anchor="middle"
         fill="url(#wgGradient)">W</text>
 </svg>
