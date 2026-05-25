@@ -1,5 +1,5 @@
-appId: com.writetool.app
-productName: WriteTool
+appId: com.snoringdata.writeapp
+productName: 打鼾数据-写入工具
 directories:
   output: release
   buildResources: resources

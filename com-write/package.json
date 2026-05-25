@@ -1,7 +1,7 @@
 {
   "name": "write-tool",
   "version": "1.0.0",
-  "description": "串口写入工具",
+  "description": "打鼾数据-写入工具",
   "main": "src/main/index.js",
   "scripts": {
     "start": "electron .",
