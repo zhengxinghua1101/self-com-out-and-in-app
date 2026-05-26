@@ -6,7 +6,10 @@
       "Bash(logo.svg:*)",
       "Bash(npm run:*)",
       "Bash(npm install:*)",
-      "Bash(sips -g pixelWidth -g pixelHeight src/my_data/logo.png)"
+      "Bash(sips -g pixelWidth -g pixelHeight src/my_data/logo.png)",
+      "Bash(cp /Users/keeson/code/github/self-com-out-and-in-app/com-write/build/icons/icon.ico /Users/keeson/code/github/self-com-out-and-in-app/com-write/build/)",
+      "Bash(cp /Users/keeson/code/github/self-com-out-and-in-app/com-write/build/icons/icon.icns /Users/keeson/code/github/self-com-out-and-in-app/com-write/build/)",
+      "Bash(cp -r /Users/keeson/code/github/self-com-out-and-in-app/com-write/build/icons/*.png /Users/keeson/code/github/self-com-out-and-in-app/com-write/build/)"
     ]
   }
 }

@@ -14,7 +14,7 @@
     "build:mac": "npm run rebuild && electron-builder --mac",
     "build:linux": "npm run rebuild && electron-builder --linux",
     "postinstall": "electron-builder install-app-deps",
-    "logo": "electron-icon-builder --input=./src/my_data/logo.png --output=./src/my_data --flatten"
+    "logo": "electron-icon-builder --input=./src/my_data/logo.png --output=./build --flatten"
   },
   "author": "",
   "license": "MIT",
